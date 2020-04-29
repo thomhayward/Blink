@@ -1,31 +1,30 @@
 
 PROJECT = blink
-ARCH = atmega328p
 
-AVRDUDE_PORT = /dev/cu.usbmodem14101
+MCU ?= atmega328p
+PORT ?= $(firstword $(wildcard /dev/cu.usbmodem*))
 
-CMMCU = -mmcu=$(ARCH)
-CSTANDARD = -std=gnu99
-CEXTRA = -Os -Wall -fno-exceptions -ffunction-sections -fdata-sections
-ALL_CFLAGS = $(CSTANDARD) $(CEXTRA) $(CMMCU)
+CXX = avr-g++
+CXXSTANDARD = -std=gnu++11
+CXXEXTRA = -Os -Wall -fno-exceptions -ffunction-sections -fdata-sections
+CXXFLAGS = $(CXXSTANDARD) $(CXXEXTRA) -mmcu=$(MCU)
 
-CC = avr-gcc
 OBJCOPY = avr-objcopy
 
-%.o: %.c
-	$(CC) -c $(ALL_CFLAGS) -o $@ $<
-
-%.elf: %.o
-	$(CC) $(ALL_CFLAGS) -o $@ $<
+%.elf: $(wildcard *.cc)
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
 %.hex: %.elf
 	$(OBJCOPY) -j .text -j .data -O ihex $< $@
 
+.PHONY: build
 build: $(PROJECT).hex
 	#
 
+.PHONY: upload
 upload: $(PROJECT).hex
-	avrdude -p $(ARCH) -c arduino -P $(AVRDUDE_PORT) -D -U $<
+	avrdude -p $(MCU) -c arduino -P $(PORT) -D -U $<
 
+.PHONY: clean
 clean:
 	rm $(PROJECT).hex
